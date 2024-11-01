@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <link rel="stylesheet" type="text/css" href="css.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сайт Заметок</title>
+</head>
+
+<body>
+    <div class="background-blur"></div>
+    <div class="intro">
+        <div class="intro-content">
+            <h1>Добро пожаловать в Заметки!</h1>
+            <p>Записывайте свои мысли и идеи легко и удобно. Начните использовать наш сервис прямо сейчас!</p>
+            <button id="start-btn">Начать пользоваться</button>
+        </div>
+    </div>
+    <h1>Заметки</h1>
+    <div class="toolbar">
+        <button onclick="toggleTheme()" id="themeButton">Сменить тему</button>
+        <button onclick="document.execCommand('bold'); setActive(this)">Жирный</button>
+        <button onclick="document.execCommand('italic'); setActive(this)">Курсив</button>
+        <button onclick="addLink(); setActive(this)">Добавить ссылку</button>
+        <select onchange="changeFontSize(this.value); this.selectedIndex = 0;">
+            <option value="">Размер шрифта</option>
+            <option value="1">Маленький</option>
+            <option value="3">Средний</option>
+            <option value="5">Большой</option>
+        </select>
+        <select onchange="changeFontFamily(this.value); this.selectedIndex = 0;">
+            <option value="">Шрифт</option>
+            <option value="Arial">Arial</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Times New Roman">Times New Roman</option>
+        </select>
+        <button onclick="chooseTemplate()">Выбрать шаблон заметки</button>
+    </div>
+    <div id="noteInput" contenteditable="true" placeholder="Введите свою заметку..."></div>
+    <button id="addNoteButton" onclick="addNote()">Добавить заметку</button>
+    <div id="notesContainer"></div>
+
+    <footer>
+        Заметки от Алмазки Талипова 2707
+    </footer>
+
+    <script>
+        let darkMode = false;
+
+        function toggleTheme() {
+            darkMode = !darkMode;
+            document.body.classList.toggle('dark-mode', darkMode);
+            const tools = document.querySelectorAll('.toolbar button, .toolbar select');
+            tools.forEach((tool) => {
+                tool.style.backgroundColor = darkMode ? '#555' : '#007BFF';
+                tool.style.color = '#fff';
+            });
+            const notes = document.querySelectorAll('.note');
+            notes.forEach(note => {
+                note.classList.toggle('dark', darkMode);
+            });
+            saveNotes(); // Сохранение темы
+        }
+
+        function setActive(button) {
+            const buttons = document.querySelectorAll('.toolbar button');
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+        }
+
+        function addNote() {
+            const noteInput = document.getElementById('noteInput');
+            let noteText = noteInput.innerHTML;
+
+            // Замена текста, если вводится специальная фраза
+            if (noteText.includes("Руслан Ильдарович кто?")) {
+                noteText = "Руслан Ильдарович лучший!";
+            }
+
+            if (noteText) {
+                const noteDate = new Date().toLocaleString();
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note' + (darkMode ? ' dark' : '');
+                noteElement.innerHTML = `
+                    <span class="note-text">${noteText}</span><br>
+                    <small>Создано: ${noteDate}</small>
+                    <button onclick="editNote(this)">Редактировать</button>
+                    <button onclick="deleteNote(this)">Удалить</button>
+                    <button onclick="saveNoteToFile(this)">Сохранить заметку</button>
+                    <button onclick="printNote(this)">Печать</button>
+                `;
+                document.getElementById('notesContainer').appendChild(noteElement);
+                noteInput.innerHTML = '';
+                saveNotes(); // Сохранение заметки
+            }
+        }
+
+        function editNote(button) {
+            const noteText = button.parentElement.querySelector('.note-text').innerHTML;
+            const noteInput = document.getElementById('noteInput');
+            noteInput.innerHTML = noteText; // Вставляем текст в поле ввода
+            button.parentElement.remove(); // Удаляем заметку
+            saveNotes(); // Сохранение после редактирования
+            noteInput.focus();
+        }
+
+        function deleteNote(button) {
+            button.parentElement.remove(); // Удаление заметки
+            saveNotes(); // Сохранение после удаления
+        }
+
+        function saveNoteToFile(button) {
+            const note = button.parentElement;
+            const noteText = note.querySelector('.note-text').innerText;
+            const blob = new Blob([noteText], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'note.txt';
+            link.click();
+        }
+
+        function printNote(button) {
+            const note = button.parentElement;
+            const printWindow = window.open('', '', 'height=400,width=600');
+            printWindow.document.write('<html><head><title>Печать заметки</title></head><body>');
+            printWindow.document.write(note.querySelector('.note-text').innerText);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function changeFontSize(size) {
+            document.execCommand('fontSize', false, size);
+        }
+
+        function changeFontFamily(font) {
+            document.execCommand('fontName', false, font);
+        }
+
+        function addLink() {
+            const url = prompt("Введите URL ссылки:");
+            const text = prompt("Введите текст ссылки:");
+            if (url && text) {
+                const link = `<a href="${url}" target="_blank">${text}</a>`;
+                document.execCommand('insertHTML', false, link);
+            }
+        }
+
+        function chooseTemplate() {
+            const template = prompt("Выберите шаблон:\n1. Планы на дни недели\n2. Плюсы и минусы\n3. Контактная книжка\n4. Договоры и заявления");
+            let templateContent = '';
+
+            switch (template) {
+                case '1':
+                    templateContent = 'Планы на дни недели:\n- Понедельник:\n- Вторник:\n- Среда:\n- Четверг:\n- Пятница:\n- Суббота:\n- Воскресенье:\n';
+                    break;
+                case '2':
+                    templateContent = 'Плюсы и минусы:\nПлюсы:\n- \nМинусы:\n- \n';
+                    break;
+                case '3':
+                    templateContent = 'Контактная книжка:\nИмя:\nТелефон:\nEmail:\n';
+                    break;
+                case '4':
+                    templateContent = 'Договор:\n\n';
+                    break;
+                default:
+                    alert('Неверный шаблон.');
+                    return; // если выбран неправильный шаблон, выходим
+            }
+
+            document.getElementById('noteInput').innerText = templateContent; // Заполнение поля ввода шаблоном
+        }
+
+        function saveNotes() {
+            const notes = [];
+            const noteElements = document.querySelectorAll('.note');
+            noteElements.forEach(note => {
+                notes.push(note.querySelector('.note-text').innerText);
+            });
+            localStorage.setItem('notes', JSON.stringify(notes)); // Сохранение заметок в localStorage
+        }
+
+        function loadNotes() {
+            const savedNotes = JSON.parse(localStorage.getItem('notes'));
+            if (savedNotes) {
+                savedNotes.forEach(text => {
+                    const noteElement = document.createElement('div');
+                    noteElement.className = 'note' + (darkMode ? ' dark' : '');
+                    noteElement.innerHTML = `
+                        <span class="note-text">${text}</span><br>
+                        <button onclick="editNote(this)">Редактировать</button>
+                        <button onclick="deleteNote(this)">Удалить</button>
+                        <button onclick="saveNoteToFile(this)">Сохранить заметку</button>
+                        <button onclick="printNote(this)">Печать</button>
+                    `;
+                    document.getElementById('notesContainer').appendChild(noteElement);
+                });
+            }
+        }
+          document.getElementById('start-btn').addEventListener('click', function() {
+    const intro = document.querySelector('.intro');
+    const background = document.querySelector('.background-blur');
+    
+    // Убираем интро и фон
+    intro.style.opacity = '0';
+    background.style.opacity = '0'; // Убираем эффект размытия
+    setTimeout(() => {
+        intro.style.display = 'none';
+        background.style.display = 'none'; // Скрываем фон
+        document.querySelector('.main-content').style.display = 'block';
+    }, 800); // Время соответствует времени анимации в CSS
+});
+
+        window.onload = loadNotes; // Загружаем заметки при загрузке страницы
+    </script>
+</body>
+
+</html>
